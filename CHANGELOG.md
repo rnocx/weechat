@@ -12,6 +12,7 @@ _The file [UPGRADING.md](UPGRADING.md) contains important information about upgr
 
 ### Added
 
+- relay/api: accept TOTP via `totp.weechat.<code>` websocket subprotocol (local experiment)
 - core: add option `insert_raw` in command `/input` to insert text without converting escaped chars
 - core: add option `-older` in command `/buffer clear` to clear only lines older than a delay
 - core: add unit `d` (days) for delays in commands `/debug callbacks`, `/repeat` and `/wait`

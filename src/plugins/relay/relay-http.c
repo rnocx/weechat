@@ -582,21 +582,44 @@ relay_http_add_to_body (struct t_relay_http_request *request,
 int
 relay_http_get_auth_status (struct t_relay_client *client)
 {
-    const char *auth, *sec_websocket_protocol, *client_totp, *pos;
+    const char *auth, *sec_websocket_protocol, *client_totp, *pos, *protocol_totp;
     char *relay_password, *totp_secret, *info_totp_args, *info_totp;
-    char *user_pass, **protocol_array;
-    int rc, i, length, protocol_count, use_base64url, totp_ok;
+    char *user_pass, **protocol_array, **totp_protocol_array;
+    int rc, i, length, protocol_count, use_base64url, totp_ok, totp_count;
     long number;
 
     rc = 0;
     relay_password = NULL;
     protocol_array = NULL;
+    totp_protocol_array = NULL;
+    totp_count = 0;
     totp_secret = NULL;
     user_pass = NULL;
     use_base64url = 0;
 
     /* Check TOTP. */
     client_totp = weechat_hashtable_get (client->http_req->headers, "x-weechat-totp");
+    sec_websocket_protocol = weechat_hashtable_get (
+        client->http_req->headers, "sec-websocket-protocol");
+    totp_protocol_array = weechat_string_split (
+        sec_websocket_protocol, ",", " ", 0, 0, &totp_count);
+    protocol_totp = NULL;
+    for (i = 0; i < totp_count; i++)
+    {
+        if (strncmp (totp_protocol_array[i], "totp.weechat.", 13) != 0)
+            continue;
+        pos = totp_protocol_array[i] + 13;
+        if (protocol_totp || (strlen (pos) != 6)
+            || (strspn (pos, "0123456789") != 6)
+            || (client_totp && (strcmp (client_totp, pos) != 0)))
+        {
+            rc = -4;
+            goto end;
+        }
+        protocol_totp = pos;
+    }
+    if (protocol_totp)
+        client_totp = protocol_totp;
     if (client_totp)
     {
         if (!client_totp[0])
@@ -775,6 +798,7 @@ relay_http_get_auth_status (struct t_relay_client *client)
 
 end:
     weechat_string_free_split (protocol_array);
+    weechat_string_free_split (totp_protocol_array);
     free (relay_password);
     free (totp_secret);
     free (user_pass);

@@ -295,6 +295,12 @@ const ws = new WebSocket("wss://localhost:9000/api", [
 ])
 ----
 
+When TOTP is enabled, browser clients can additionally offer the subprotocol
+`totp.weechat.<code>`, where `<code>` is exactly six ASCII digits. The relay
+validates this code in the same way as `x-weechat-totp`. Duplicate TOTP
+subprotocols or conflicting header and subprotocol values are rejected. Only
+`api.weechat` is selected in the response; the code is never echoed.
+
 [[compression]]
 == Compression
 

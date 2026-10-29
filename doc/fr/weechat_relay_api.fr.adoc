@@ -300,6 +300,12 @@ const ws = new WebSocket("wss://localhost:9000/api", [
 ])
 ----
 
+Lorsque TOTP est activé, les clients web peuvent aussi proposer le sous-protocole
+`totp.weechat.<code>`, où `<code>` contient exactement six chiffres ASCII. Le
+relais valide ce code comme `x-weechat-totp`. Les sous-protocoles TOTP en double
+ou les valeurs contradictoires sont rejetés. Seul `api.weechat` est sélectionné
+dans la réponse ; le code n'est jamais renvoyé.
+
 [[compression]]
 == Compression
 
