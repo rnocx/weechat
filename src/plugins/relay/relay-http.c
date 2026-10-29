@@ -565,7 +565,10 @@ relay_http_add_to_body (struct t_relay_http_request *request,
 }
 
 /*
- * Get authentication status according to headers in the request.
+ * Get password and TOTP authentication status from the request headers.
+ *
+ * Accept TOTP from x-weechat-totp or the totp.weechat.<code> websocket
+ * subprotocol. Reject duplicate subprotocols and conflicting TOTP values.
  *
  * Return:
  *    0: authentication OK (password + TOTP if enabled)
@@ -599,6 +602,8 @@ relay_http_get_auth_status (struct t_relay_client *client)
 
     /* Check TOTP. */
     client_totp = weechat_hashtable_get (client->http_req->headers, "x-weechat-totp");
+
+    /* Read the TOTP subprotocol for clients unable to set custom headers. */
     sec_websocket_protocol = weechat_hashtable_get (
         client->http_req->headers, "sec-websocket-protocol");
     totp_protocol_array = weechat_string_split (
@@ -609,6 +614,7 @@ relay_http_get_auth_status (struct t_relay_client *client)
         if (strncmp (totp_protocol_array[i], "totp.weechat.", 13) != 0)
             continue;
         pos = totp_protocol_array[i] + 13;
+        /* Require six ASCII digits and one unambiguous TOTP value. */
         if (protocol_totp || (strlen (pos) != 6)
             || (strspn (pos, "0123456789") != 6)
             || (client_totp && (strcmp (client_totp, pos) != 0)))
@@ -620,6 +626,8 @@ relay_http_get_auth_status (struct t_relay_client *client)
     }
     if (protocol_totp)
         client_totp = protocol_totp;
+
+    /* Apply the existing TOTP validation to either transport. */
     if (client_totp)
     {
         if (!client_totp[0])
